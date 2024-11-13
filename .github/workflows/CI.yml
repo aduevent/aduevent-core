@@ -27,17 +27,17 @@ jobs:
 
       - name: Pass environment variables from GH Actions to Docker
         run: |
-          echo "MYSQL_HOST=${MYSQL_HOST}" >> .env
-          echo "MYSQL_USER=${MYSQL_USER}" >> .env
-          echo "MYSQL_PASS=${MYSQL_PASS}" >> .env
-          echo "MYSQL_DATABASE=${MYSQL_DATABASE}" >> .env
-          echo "MYSQL_PORT=${MYSQL_PORT}" >> .env
+          echo "MYSQL_HOST=${{ env.MYSQL_HOST }}" >> .env
+          echo "MYSQL_USER=${{ env.MYSQL_USER }}" >> .env
+          echo "MYSQL_PASS=${{ secrets.MYSQL_PASS }}" >> .env
+          echo "MYSQL_DATABASE=${{ env.MYSQL_DATABASE }}" >> .env
+          echo "MYSQL_PORT=${{ env.MYSQL_PORT }}" >> .env
 
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: my-docker-hub-namespace/my-docker-hub-repository
+          images: adueventsys/aduevent
 
       - name: Build and push Docker image
         id: push
