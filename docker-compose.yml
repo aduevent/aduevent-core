@@ -1,0 +1,20 @@
+services:
+  aduevent:
+    build:
+      context: .
+    volumes:
+      - ./app:/var/www/html
+      - ./composer.json:/var/www/composer.json
+      - ./composer.lock:/var/www/composer.lock
+      - ./package.json:/var/www/package.json
+      - ./package-lock.json:/var/www/package-lock.json
+      - ./apache.conf:/etc/apache2/sites-enabled/000-default.conf
+    working_dir: /var/www
+    ports:
+      - "8080:80"
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASS=${MYSQL_PASS}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_PORT=${MYSQL_PORT}
