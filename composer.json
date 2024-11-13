@@ -1,0 +1,10 @@
+{
+    "name": "capstoneproject/aduevent",
+    "description": "A system designed to digitalize the process of event organizing.",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "require": {
+        "phpmailer/phpmailer": "^6.9"
+    }
+}
