@@ -18,7 +18,7 @@ if($_SERVER['REQUEST_METHOD'] == "POST"){
                 $_SESSION['name'] = $studentData['name'];
                 $_SESSION['access'] = $studentData['userTypeID'];
                 $_SESSION['organizationID'] = $studentData['organizationID'];
-                $_SESSION['organizationTypeID'] = $studentData['organizationTypeID'];
+                // $_SESSION['organizationTypeID'] = $studentData['organizationTypeID'];
                 if($studentData['userTypeID'] == 1){
                     header("Location: studentIndex.php?id=".$studentData['id']);
                     exit;
