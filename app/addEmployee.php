@@ -1,62 +1,77 @@
 <?php
 session_start();
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION["id"])) {
     header("Location: loginEmployee.php");
-    exit;
+    exit();
 }
 
-include("dbcon.php");
-$userId = $_SESSION['id'];
-$userQuery = "SELECT name, email, profilePicture, userTypeID, organizationID FROM employeeuser WHERE id = ?";
+include "dbcon.php";
+$userId = $_SESSION["id"];
+$userQuery =
+    "SELECT name, email, profilePicture, userTypeID, organizationID FROM employeeuser WHERE id = ?";
 $stmt = $conn->prepare($userQuery);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
 
-$_SESSION['access'] = $userData['userTypeID'];
+$_SESSION["access"] = $userData["userTypeID"];
 
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
-$access = $_SESSION['access'];
-$organizationID = $userData['organizationID'];
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
+$access = $_SESSION["access"];
+$organizationID = $userData["organizationID"];
 
-if ($_SESSION['access'] != 6) {
+if ($_SESSION["access"] != 6) {
     echo "Access Denied.";
-    exit;
+    exit();
 }
 
-include("adminNavbar.php");  // Include the navbar
+include "adminNavbar.php"; // Include the navbar
 $activePage = "addEmployee";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $userTypeID = $_POST['userTypeID'];
-    $organizationID = in_array($userTypeID, [5, 6, 8, 9, 10, 11, 12]) ? null : $_POST['organizationID'];
+    $userTypeID = $_POST["userTypeID"];
+    $organizationID = in_array($userTypeID, [5, 6, 8, 9, 10, 11, 12])
+        ? null
+        : $_POST["organizationID"];
 
-    if (!in_array($userTypeID, [5, 6, 8, 9, 10, 11, 12]) && empty($organizationID)) {
+    if (
+        !in_array($userTypeID, [5, 6, 8, 9, 10, 11, 12]) &&
+        empty($organizationID)
+    ) {
         echo "Organization is required for this user type.";
-        exit;
+        exit();
     }
 
-    $employeeNumber = $_POST['employeeNumber'];
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $pin = $_POST['pin'];
+    $employeeNumber = $_POST["employeeNumber"];
+    $name = $_POST["name"];
+    $email = $_POST["email"];
+    $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
+    $pin = $_POST["pin"];
 
-    $insertQuery = "INSERT INTO employeeuser (organizationID, employeeNumber, name, email, password, userTypeID) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $insertQuery =
+        "INSERT INTO employeeuser (organizationID, employeeNumber, name, email, password, userTypeID) VALUES (?, ?, ?, ?, ?, ?)";
     $insertStmt = $conn->prepare($insertQuery);
 
     if (!$insertStmt) {
         die("Prepare failed: (" . $conn->errno . ") " . $conn->error);
     }
 
-    $insertStmt->bind_param("issssi", $organizationID, $employeeNumber, $name, $email, $password, $userTypeID);
+    $insertStmt->bind_param(
+        "issssi",
+        $organizationID,
+        $employeeNumber,
+        $name,
+        $email,
+        $password,
+        $userTypeID
+    );
 
     if ($insertStmt->execute()) {
         echo "<script>alert('Successfully added to the database'); window.location.href='adminIndex.php';</script>";
-        exit;
+        exit();
     } else {
         echo "Error: " . $insertStmt->error;
     }
@@ -123,7 +138,11 @@ $userTypeResult = $conn->query($userTypeQuery);
                 <select name="organizationID" id="organizationID" class="form-control">
                     <option value="">Select Organization</option>
                     <?php while ($orgData = $orgResult->fetch_assoc()) { ?>
-                        <option value="<?php echo $orgData['organizationID']; ?>"><?php echo $orgData['organizationName']; ?></option>
+                        <option value="<?php echo $orgData[
+                            "organizationID"
+                        ]; ?>"><?php echo $orgData[
+    "organizationName"
+]; ?></option>
                     <?php } ?>
                 </select>
             </div>
@@ -147,8 +166,14 @@ $userTypeResult = $conn->query($userTypeQuery);
                 <label for="userTypeID">User Type</label>
                 <select name="userTypeID" id="userTypeID" class="form-control" required onchange="toggleOrganizationField()">
                     <option value="">Select User Type</option>
-                    <?php while ($userTypeData = $userTypeResult->fetch_assoc()) { ?>
-                        <option value="<?php echo $userTypeData['userTypeID']; ?>"><?php echo $userTypeData['userTypeDescription']; ?></option>
+                    <?php while (
+                        $userTypeData = $userTypeResult->fetch_assoc()
+                    ) { ?>
+                        <option value="<?php echo $userTypeData[
+                            "userTypeID"
+                        ]; ?>"><?php echo $userTypeData[
+    "userTypeDescription"
+]; ?></option>
                     <?php } ?>
                 </select>
             </div>
