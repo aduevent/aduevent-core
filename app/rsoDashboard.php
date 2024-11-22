@@ -1,11 +1,11 @@
 <?php
 session_start();
-if (!isset($_SESSION['id']) || !isset($_SESSION['access'])) {
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
     header("Location: loginStudent.php");
-    exit;
+    exit();
 }
-include("dbcon.php");
-$userId = $_SESSION['id'];
+include "dbcon.php";
+$userId = $_SESSION["id"];
 $userQuery = "
     SELECT su.name, su.email, su.organizationID, o.organizationName, o.organizationLogo as profilePicture
     FROM studentuser su JOIN organization o ON su.organizationID = o.organizationID
@@ -16,45 +16,51 @@ $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
-$orgId = $userData['organizationID'];
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
+$orgId = $userData["organizationID"];
 
-$currentYear = date('Y');
-$currentMonth = date('n');
+$currentYear = date("Y");
+$currentMonth = date("n");
 
 if ($currentMonth >= 1 && $currentMonth <= 7) {
-    $defaultAcademicYear = ($currentYear - 1) . '-' . $currentYear;
+    $defaultAcademicYear = $currentYear - 1 . "-" . $currentYear;
 } else {
-    $defaultAcademicYear = $currentYear . '-' . ($currentYear + 1);
+    $defaultAcademicYear = $currentYear . "-" . ($currentYear + 1);
 }
 
 // Set the default start and end dates for the academic year
-$academicYearStartDate = ($currentMonth >= 1 && $currentMonth <= 7) ? ($currentYear - 1) . '-08-01' : $currentYear . '-08-01';
-$academicYearEndDate = ($currentMonth >= 1 && $currentMonth <= 7) ? $currentYear . '-07-31' : ($currentYear + 1) . '-07-31';
+$academicYearStartDate =
+    $currentMonth >= 1 && $currentMonth <= 7
+        ? $currentYear - 1 . "-08-01"
+        : $currentYear . "-08-01";
+$academicYearEndDate =
+    $currentMonth >= 1 && $currentMonth <= 7
+        ? $currentYear . "-07-31"
+        : $currentYear + 1 . "-07-31";
 
 // If an academic year is selected from the dropdown, update the dates accordingly
-if (isset($_GET['academicYear'])) {
-    list($startYear, $endYear) = explode('-', $_GET['academicYear']);
-    $academicYearStartDate = $startYear . '-08-01';
-    $academicYearEndDate = $endYear . '-07-31';
-    $defaultAcademicYear = $_GET['academicYear'];
+if (isset($_GET["academicYear"])) {
+    list($startYear, $endYear) = explode("-", $_GET["academicYear"]);
+    $academicYearStartDate = $startYear . "-08-01";
+    $academicYearEndDate = $endYear . "-07-31";
+    $defaultAcademicYear = $_GET["academicYear"];
 }
 
 // SQL query to fetch event data for organizationID = 12 within the selected academic year
-$sql = "SELECT pointSystemCategoryID, COUNT(*) AS eventCount FROM event 
+$sql = "SELECT pointSystemCategoryID, COUNT(*) AS eventCount FROM event
         WHERE organizationID = $orgId AND eventDate BETWEEN '$academicYearStartDate' AND '$academicYearEndDate' AND eventStatus = '1'
         GROUP BY pointSystemCategoryID";
 $result = $conn->query($sql);
 
-$eventCounts = array_fill(1, 5, 0);  // Initialize event counts for all categories
+$eventCounts = array_fill(1, 5, 0); // Initialize event counts for all categories
 if ($result) {
     while ($row = $result->fetch_assoc()) {
-        $eventCounts[$row['pointSystemCategoryID']] = $row['eventCount'];
+        $eventCounts[$row["pointSystemCategoryID"]] = $row["eventCount"];
     }
 }
-$registrationSql = "SELECT e.eventID, e.eventTitle, COUNT(er.eventID) AS registrationCount 
+$registrationSql = "SELECT e.eventID, e.eventTitle, COUNT(er.eventID) AS registrationCount
                     FROM event e
                     LEFT JOIN eventregistration er ON e.eventID = er.eventID
                     WHERE e.organizationID = $orgId AND e.eventDate BETWEEN '$academicYearStartDate' AND '$academicYearEndDate' AND eventStatus = '1'
@@ -65,25 +71,25 @@ $eventTitles = [];
 $registrationCounts = [];
 if ($registrationResult) {
     while ($row = $registrationResult->fetch_assoc()) {
-        $eventTitles[] = $row['eventTitle'];
-        $registrationCounts[] = $row['registrationCount'];
+        $eventTitles[] = $row["eventTitle"];
+        $registrationCounts[] = $row["registrationCount"];
     }
 }
 
 // Mapping Point System Categories to Labels and Colors
 $categoryLabels = [
-    1 => 'Organizational-Related',
-    2 => 'Community Involvement',
-    3 => 'Spiritual Enrichment',
-    4 => 'Environmental',
-    5 => 'Organizational Development'
+    1 => "Organizational-Related",
+    2 => "Community Involvement",
+    3 => "Spiritual Enrichment",
+    4 => "Environmental",
+    5 => "Organizational Development",
 ];
 $categoryColors = [
-    1 => 'rgba(255, 99, 132, 0.5)',
-    2 => 'rgba(54, 162, 235, 0.5)',
-    3 => 'rgba(255, 206, 86, 0.5)',
-    4 => 'rgba(75, 192, 192, 0.5)',
-    5 => 'rgba(153, 102, 255, 0.5)'
+    1 => "rgba(255, 99, 132, 0.5)",
+    2 => "rgba(54, 162, 235, 0.5)",
+    3 => "rgba(255, 206, 86, 0.5)",
+    4 => "rgba(75, 192, 192, 0.5)",
+    5 => "rgba(153, 102, 255, 0.5)",
 ];
 ?>
 
@@ -94,8 +100,10 @@ $categoryColors = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <?php include 'rsoNavbar.php';
-    $activePage = "rsoDashboard"; ?>
+    <?php
+    include "rsoNavbar.php";
+    $activePage = "rsoDashboard";
+    ?>
     <style>
         .container {
             display: flex;
@@ -155,12 +163,19 @@ $categoryColors = [
 <body style="margin-left: 20%; padding-top: 5px;">
 <div class="container">
     <div class="col-left">
-        <div style="display: flex; justify-content: center; align-items: center; height: 100px;"> 
+        <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
             <form method="GET" action="" style="display: inline-block;">
                 <select name="academicYear" onchange="this.form.submit()" style="border-radius: 50px; box-shadow: 0px 4px 8px rgba(0,0,0,0.2); padding: 8px 12px; font-size: 14px; margin-bottom: 5px; border: 1px solid #ccc; background-color: #fff;">
-                    <?php for ($year = 2018; $year <= $currentYear + 1; $year++): ?>
-                    <?php $displayYear = $year . '-' . ($year + 1); ?>
-                    <option value="<?= $displayYear ?>" <?= $displayYear == $defaultAcademicYear ? 'selected' : '' ?>>
+                    <?php for (
+                        $year = 2018;
+                        $year <= $currentYear + 1;
+                        $year++
+                    ): ?>
+                    <?php $displayYear = $year . "-" . ($year + 1); ?>
+                    <option value="<?= $displayYear ?>" <?= $displayYear ==
+$defaultAcademicYear
+    ? "selected"
+    : "" ?>>
                         <?= $displayYear ?>
                     </option>
                     <?php endfor; ?>
@@ -208,7 +223,9 @@ var donutChart = new Chart(ctx, {
         onClick: function (evt, item) {
             if (item.length > 0) {
                 var index = item[0].index;  // Get the clicked segment index
-                var category = Object.keys(<?= json_encode($categoryLabels) ?>)[index];  // Get the category ID
+                var category = Object.keys(<?= json_encode(
+                    $categoryLabels
+                ) ?>)[index];  // Get the category ID
                 showEventDetails(category);  // Call the function to show event details
             }
         }
@@ -218,7 +235,7 @@ var donutChart = new Chart(ctx, {
 // Function to show event details for the selected category
 function showEventDetails(categoryID) {
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "rsofetchEvents.php?categoryID=" + categoryID + "&academicYear=<?= $defaultAcademicYear ?>", true);
+    xhr.open("GET", "rsoFetchEvents.php?categoryID=" + categoryID + "&academicYear=<?= $defaultAcademicYear ?>", true);
     xhr.onload = function () {
         if (this.status === 200) {
             document.getElementById('eventDetails').innerHTML = this.responseText;
@@ -231,7 +248,9 @@ function truncateTitle(title, maxLength) {
 }
 
 // Get truncated event titles
-var truncatedEventTitles = <?= json_encode($eventTitles) ?>.map(function(title) {
+var truncatedEventTitles = <?= json_encode(
+    $eventTitles
+) ?>.map(function(title) {
     return truncateTitle(title, 15);  // Adjust '15' to control max title length
 });
 

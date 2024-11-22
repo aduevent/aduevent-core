@@ -1,11 +1,11 @@
-<?php 
+<?php
 session_start();
-if (!isset($_SESSION['id']) || !isset($_SESSION['access'])) {
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
     header("Location: loginStudent.php");
-    exit;
+    exit();
 }
-include("dbcon.php");
-$userId = $_SESSION['id'];
+include "dbcon.php";
+$userId = $_SESSION["id"];
 $userQuery = "
     SELECT su.name, su.email, su.organizationID, o.organizationName, o.organizationLogo as profilePicture
     FROM studentuser su JOIN organization o ON su.organizationID = o.organizationID
@@ -16,22 +16,22 @@ $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
-$orgId = $userData['organizationID'];
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
+$orgId = $userData["organizationID"];
 
-$month = isset($_GET['month']) ? intval($_GET['month']) : date('m');
-$year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
+$month = isset($_GET["month"]) ? intval($_GET["month"]) : date("m");
+$year = isset($_GET["year"]) ? intval($_GET["year"]) : date("Y");
 
-if (isset($_GET['action'])) {
-    if ($_GET['action'] === 'prev') {
+if (isset($_GET["action"])) {
+    if ($_GET["action"] === "prev") {
         $month--;
         if ($month < 1) {
             $month = 12;
             $year--;
         }
-    } elseif ($_GET['action'] === 'next') {
+    } elseif ($_GET["action"] === "next") {
         $month++;
         if ($month > 12) {
             $month = 1;
@@ -46,15 +46,17 @@ $result = mysqli_query($conn, $query);
 
 $events = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    $events[$row['eventDate']][] = $row['eventTitle']; // Group events by date
+    $events[$row["eventDate"]][] = $row["eventTitle"]; // Group events by date
 }
 
 // Determine how many days are in the current month
 $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
 // First day of the current month (used for aligning the calendar)
-$firstDayOfMonth = date('N', strtotime("$year-$month-02"));
-$clickedDate = isset($_GET['date']) ? $_GET['date'] : null;
+$firstDayOfMonth = date("N", strtotime("$year-$month-02"));
+
+$date = new DateTime();
+$clickedDate = isset($_GET["date"]) ? $_GET["date"] : $date->format("Y-m-d");
 
 // Fetch notes for the selected date
 $notesQuery = "SELECT noteContent FROM eventnotes WHERE noteDate = '$clickedDate' AND createdBy ='$userId' AND type ='1'";
@@ -71,8 +73,10 @@ while ($row = mysqli_fetch_assoc($notesResult)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Calendar</title>
-    <?php include 'rsoNavbar.php'; 
-    $activePage = "rsoCalendarView" ?>
+    <?php
+    include "rsoNavbar.php";
+    $activePage = "rsoCalendarView";
+    ?>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -151,22 +155,22 @@ while ($row = mysqli_fetch_assoc($notesResult)) {
     <div class="container">
     <ul class="list-inline" style="margin-bottom: 10px;">
         <li class="list-inline-item">
-            <button onclick="window.location.href='rsoIndex.php';" 
-                    class="btn btn-light d-flex justify-content-center align-items-center" 
+            <button onclick="window.location.href='rsoIndex.php';"
+                    class="btn btn-light d-flex justify-content-center align-items-center"
                     style="width: 40px; height: 40px; border-radius: 50%; padding: 0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); background-color: #f9f9f9;">
                 <i class="bi bi-arrow-left-circle" style="color: #000080; font-size: 20px;"></i>
             </button>
         </li>
         <li class="list-inline-item">
             <button onclick="window.location.href='rsoEventCalendar.php';"
-                    class="btn btn-secondary justify-content-center" 
+                    class="btn btn-secondary justify-content-center"
                     style="width: 300px; height: 40px; border-radius: 50px; padding: 0 15px; border: 1px solid #808080; background-color: transparent;">
                 <span style="color: #000000; font-weight: bold;">List View</span>
             </button>
         </li>
-        <li class="list-inline-item"> 
-            <button onclick="javascript:void(0);" 
-                    class="btn btn-secondary justify-content-center" 
+        <li class="list-inline-item">
+            <button onclick="javascript:void(0);"
+                    class="btn btn-secondary justify-content-center"
                     style="width: 300px; height: 40px; border-radius: 50px; padding: 0 15px; border: none; background-color: #f1f1f1;">
                 <span style="color: #808080; font-weight: bold;">Calendar View</span>
             </button>
@@ -176,7 +180,10 @@ while ($row = mysqli_fetch_assoc($notesResult)) {
         <div class="calendar-container">
             <div class="nav-buttons">
             <a href="?action=prev&month=<?php echo $month; ?>&year=<?php echo $year; ?>">&#9664;</a>
-                <span><?php echo date('F Y', strtotime("$year-$month-01")); ?></span>
+                <span><?php echo date(
+                    "F Y",
+                    strtotime("$year-$month-01")
+                ); ?></span>
                 <a href="?action=next&month=<?php echo $month; ?>&year=<?php echo $year; ?>">&#9654;</a>
             </div>
 
@@ -198,25 +205,27 @@ while ($row = mysqli_fetch_assoc($notesResult)) {
                     }
 
                     for ($day = 1; $day <= $daysInMonth; $day++) {
-                        $currentDate = "$year-$month-".str_pad($day, 2, '0', STR_PAD_LEFT); // Format the date as YYYY-MM-DD
-                    
+                        $currentDate =
+                            "$year-$month-" .
+                            str_pad($day, 2, "0", STR_PAD_LEFT); // Format the date as YYYY-MM-DD
+
                         echo "<td";
-                        
+
                         if (array_key_exists($currentDate, $events)) {
                             echo ' class="event"';
                         }
-                    
+
                         echo ">";
                         echo "<a href='?date=$currentDate'>$day</a>"; // Link the date to the current page with the date parameter
-                    
+
                         if (array_key_exists($currentDate, $events)) {
                             foreach ($events[$currentDate] as $eventTitle) {
                                 echo "<div class='event-title'>$eventTitle</div>";
                             }
                         }
-                    
+
                         echo "</td>";
-                        
+
                         // Move to the next row after Saturday (7th day of the week)
                         if (($day + $firstDayOfMonth - 1) % 7 == 0) {
                             echo "</tr><tr>";
@@ -224,7 +233,8 @@ while ($row = mysqli_fetch_assoc($notesResult)) {
                     }
 
                     // Fill the remaining cells of the last week with empty cells
-                    $remainingDays = (7 - ($daysInMonth + $firstDayOfMonth - 1) % 7) % 7;
+                    $remainingDays =
+                        (7 - (($daysInMonth + $firstDayOfMonth - 1) % 7)) % 7;
                     for ($i = 0; $i < $remainingDays; $i++) {
                         echo "<td></td>";
                     }
@@ -235,11 +245,13 @@ while ($row = mysqli_fetch_assoc($notesResult)) {
 
         <!-- Notes Column -->
         <div class="notes-container">
-    <div class="notes-header">Notes for <?php echo $clickedDate ? date('F j, Y', strtotime($clickedDate)) : 'Selected Date'; ?></div>
-    
+    <div class="notes-header">Notes for <?php echo $clickedDate
+        ? date("F j, Y", strtotime($clickedDate))
+        : "Selected Date"; ?></div>
+
     <?php if (count($notes) > 0): ?>
         <?php foreach ($notes as $note): ?>
-            <div class="note-item"><?php echo $note['noteContent']; ?></div>
+            <div class="note-item"><?php echo $note["noteContent"]; ?></div>
         <?php endforeach; ?>
     <?php else: ?>
         <div class="note-item">No notes for this date.</div>
