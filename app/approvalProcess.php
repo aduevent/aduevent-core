@@ -1,8 +1,8 @@
 <?php
 // simply ignore warnings, since control flow is unclear,
 // given the echo calls
-error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
-ini_set("display_errors", "Off");
+// error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+// ini_set("display_errors", "Off");
 
 session_start();
 
