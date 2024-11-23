@@ -1,29 +1,30 @@
 <?php
 session_start();
-if (!isset($_SESSION['id']) || !isset($_SESSION['access'])) {
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
     header("Location: loginEmployee.php");
-    exit;
+    exit();
 }
-include 'dbcon.php';
+include "dbcon.php";
 
-$userId = $_SESSION['id'];
-$userQuery = "SELECT name, email, profilePicture FROM employeeuser WHERE id = ?";
+$userId = $_SESSION["id"];
+$userQuery =
+    "SELECT name, email, profilePicture FROM employeeuser WHERE id = ?";
 $stmt = $conn->prepare($userQuery);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
 // Fetch organizations for dropdown
 $orgQuery = "SELECT organizationID, organizationName FROM organization";
 $orgResult = mysqli_query($conn, $orgQuery);
 
 // Fetch point system categories for dropdown
-$pointSystemQuery = "SELECT pointSystemCategoryID, pointSystemCategoryDescription FROM pointSystemCategory";
+$pointSystemQuery =
+    "SELECT pointSystemCategoryID, pointSystemCategoryDescription FROM pointSystemCategory";
 $pointSystemResult = mysqli_query($conn, $pointSystemQuery);
-
 ?>
 
 <!DOCTYPE html>
@@ -34,8 +35,10 @@ $pointSystemResult = mysqli_query($conn, $pointSystemQuery);
     <title>Event Accomplishment Report</title>
     <link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-..." crossorigin="anonymous">
-    <?php include 'navbar.php'; 
-    $activePage = "osaReport"; ?>
+    <?php
+    include "navbar.php";
+    $activePage = "osaReport";
+    ?>
     <style>
         .container {
             display: flex;
@@ -105,22 +108,32 @@ $pointSystemResult = mysqli_query($conn, $pointSystemQuery);
                 <select id="organization" name="organization" class="form-control" style="border-radius: 50px;">
                     <option value="">All</option>
                     <?php while ($orgRow = mysqli_fetch_assoc($orgResult)) { ?>
-                        <option value="<?php echo $orgRow['organizationID']; ?>"><?php echo $orgRow['organizationName']; ?></option>
+                        <option value="<?php echo $orgRow[
+                            "organizationID"
+                        ]; ?>"><?php echo $orgRow[
+    "organizationName"
+]; ?></option>
                     <?php } ?>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="startDate">Select Date Range:</label>
-                <input type="date" id="startDate" name="startDate" class="form-control" style="border-radius: 50px;"> - 
+                <input type="date" id="startDate" name="startDate" class="form-control" style="border-radius: 50px;"> -
                 <input type="date" id="endDate" name="endDate" class="form-control" style="border-radius: 50px;">
             </div>
             <div class="form-group">
                 <label for="pointSystemCategory">Select Point System Category:</label>
                 <select id="pointSystemCategory" name="pointSystemCategory" class="form-control" style="border-radius: 50px;">
                     <option value="">All</option>
-                    <?php while ($pointRow = mysqli_fetch_assoc($pointSystemResult)) { ?>
-                        <option value="<?php echo $pointRow['pointSystemCategoryID']; ?>"><?php echo $pointRow['pointSystemCategoryDescription']; ?></option>
+                    <?php while (
+                        $pointRow = mysqli_fetch_assoc($pointSystemResult)
+                    ) { ?>
+                        <option value="<?php echo $pointRow[
+                            "pointSystemCategoryID"
+                        ]; ?>"><?php echo $pointRow[
+    "pointSystemCategoryDescription"
+]; ?></option>
                     <?php } ?>
                 </select>
             </div>
@@ -175,9 +188,9 @@ $pointSystemResult = mysqli_query($conn, $pointSystemQuery);
         var pointSystemCategory = $('#pointSystemCategory').val();
 
         // Redirect to the PHP script that generates the PDF, passing the filters as URL parameters
-        window.location.href = 'generate_pdf.php?organization=' + organization + 
-                                '&startDate=' + startDate + 
-                                '&endDate=' + endDate + 
+        window.location.href = 'generate_pdf.php?organization=' + organization +
+                                '&startDate=' + startDate +
+                                '&endDate=' + endDate +
                                 '&pointSystemCategory=' + pointSystemCategory + '&userName=' + encodeURIComponent(userName);
     });
 </script>
