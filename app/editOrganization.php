@@ -37,13 +37,46 @@ if ($orgId === null) {
 }
 
 // Fetch organization details
-$orgQuery =
-    "SELECT organizationName, organizationTypeID, organizationLogo, organizationEmail FROM organization WHERE organizationID = ?";
+$orgQuery = "SELECT
+        organization.organizationName,
+        organization.organizationTypeID,
+        organization.organizationLogo,
+        organization.organizationEmail,
+        files.id AS logoFileReference,
+        files.filename AS logoFileName,
+        files.data AS logoData
+    FROM
+        organization
+    LEFT JOIN
+        files
+    ON
+        organization.logoFileReference = files.id
+    WHERE
+        organization.organizationID = ?";
 $stmt = $conn->prepare($orgQuery);
 $stmt->bind_param("i", $orgId);
 $stmt->execute();
 $orgResult = $stmt->get_result();
 $orgData = $orgResult->fetch_assoc();
+
+$logoData = null;
+$logoMimeType = null;
+
+if (!empty($orgData["logoFileReference"])) {
+    $fileExtension = pathinfo(
+        $orgData["logoFileReference"],
+        PATHINFO_EXTENSION
+    );
+    $mimeType = match (strtolower($fileExtension)) {
+        "jpg", "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        default => "application/octet-stream",
+    };
+
+    // base 64 encoding
+    $logoData = base64_encode($orgData["logoData"]);
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $organizationName = $_POST["organizationName"];
@@ -199,7 +232,12 @@ $typeResult = $conn->query($typeQuery);
             </div>
             <div class="form-group">
                 <label for="organizationLogo">Organization Logo</label><br>
-                <?php if ($orgData["organizationLogo"]) { ?>
+                <?php if (!empty($logoData)) { ?>
+                    <img src="<?php echo "data:" .
+                        $logoMimeType .
+                        ";base64," .
+                        $logoData; ?>" alt="Current Logo" style="width: 100px; height: auto;">
+                <?php } elseif ($orgData["organizationLogo"]) { ?>
                     <img src="<?php echo htmlspecialchars(
                         $orgData["organizationLogo"]
                     ); ?>?v=<?php echo time(); ?>" alt="Current Logo" style="width: 100px; height: auto;">

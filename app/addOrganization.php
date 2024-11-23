@@ -44,54 +44,65 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $organizationEmail = $_POST["organizationEmail"];
     $logoPath = null; // Initialize logoPath
 
+    // temporary variable for storing the newly inserted logo file data
+    $insertedLogoID = null;
+
     // Handle file upload (if logo is uploaded)
     if (
         isset($_FILES["organizationLogo"]) &&
         $_FILES["organizationLogo"]["error"] == 0
     ) {
-        $logoFile = $_FILES["organizationLogo"];
-        $allowedTypes = ["image/jpeg", "image/png", "image/gif"]; // Allowed file types
-        $uploadDir = "uploads/"; // Directory to save uploaded files
-        $logoPath = $uploadDir . basename($logoFile["name"]); // Save the file path
+        $validMimetypes = ["image/jpeg", "image/png", "image/gif"];
+        $file = $_FILES["organizationLogo"];
 
-        // Validate file type
-        if (in_array($logoFile["type"], $allowedTypes)) {
-            // Move the uploaded file to the designated folder
-            if (move_uploaded_file($logoFile["tmp_name"], $logoPath)) {
-                // Logo uploaded successfully
+        if (in_array($file["type"], $validMimetypes)) {
+            // buffer
+            $null = null;
+            $fileContents = file_get_contents($file["tmp_name"]);
+
+            $file_store_stmt = $conn->prepare(
+                "INSERT INTO files (filename, data) VALUES (?, ?)"
+            );
+            $file_store_stmt->bind_param("sb", $file["name"], $null);
+            $file_store_stmt->send_long_data(1, $fileContents);
+
+            if ($file_store_stmt->execute()) {
+                $insertedLogoID = $conn->insert_id;
             } else {
-                echo "Error uploading logo file.";
-                $logoPath = null; // Set logoPath to null in case of an error
+                echo "Failed to upload file: " . $file_store_stmt->error;
+                $logoPath = null;
             }
         } else {
             echo "Invalid file type. Please upload a JPEG, PNG, or GIF image.";
-            $logoPath = null; // Set logoPath to null in case of invalid file type
+            $logoPath = null;
         }
     }
 
-    // Prepare SQL statement to insert the new organization
-    $stmt = $conn->prepare(
-        "INSERT INTO organization (organizationName, organizationTypeID, organizationLogo, organizationEmail) VALUES (?, ?, ?, ?)"
-    );
-    $stmt->bind_param(
-        "ssss",
-        $organizationName,
-        $organizationTypeID,
-        $logoPath,
-        $organizationEmail
-    );
+    if (!empty($insertedLogoID)) {
+        $stmt = $conn->prepare(
+            "INSERT INTO organization (organizationName, organizationTypeID,
+            logoFileReference, organizationEmail) VALUES (?, ?, ?, ?)"
+        );
+        $stmt->bind_param(
+            "ssis",
+            $organizationName,
+            $organizationTypeID,
+            $insertedLogoID,
+            $organizationEmail
+        );
 
-    if ($stmt->execute()) {
-        // Set success message
-        $successMessage = "Organization added successfully!";
-        // Redirect to adminIndex.php after a delay
-        echo "<script>
-            alert('$successMessage');
-            window.location.href='adminIndex.php';
-        </script>";
-        exit();
-    } else {
-        echo "Error: " . $stmt->error;
+        if ($stmt->execute()) {
+            // Set success message
+            $successMessage = "Organization added successfully!";
+            // Redirect to adminIndex.php after a delay
+            echo "<script>
+                alert('$successMessage');
+                window.location.href='adminIndex.php';
+            </script>";
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
+        }
     }
 }
 ?>
