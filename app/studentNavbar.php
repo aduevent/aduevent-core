@@ -1,6 +1,55 @@
 <?php
-$activePage = basename($_SERVER['PHP_SELF'], ".php");
-include("dbcon.php");
+$activePage = basename($_SERVER["PHP_SELF"], ".php");
+include "dbcon.php";
+
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
+    header("Location: loginStudent.php");
+    exit();
+}
+$userId = $_SESSION["id"];
+$userQuery = "SELECT
+        studentuser.name,
+        studentuser.email,
+        studentuser.profilePicture,
+        files.id AS profilePictureFileReference,
+        files.filename AS profilePictureFileName,
+        files.data AS profilePictureFileData
+    FROM
+        studentuser
+    LEFT JOIN
+        files
+    ON
+        studentuser.profilePictureFileReference = files.id
+    WHERE
+        studentuser.id = ?";
+$stmt = $conn->prepare($userQuery);
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$userResult = $stmt->get_result();
+$userData = $userResult->fetch_assoc();
+$userName = $userData["name"];
+$email = $userData["email"];
+$stmt->close();
+
+$encoded_dp = null;
+$encoded_dp_mimetype = null;
+
+if (!empty($userData["profilePictureFileReference"])) {
+    $fileExtension = pathinfo(
+        $userData["profilePictureFileReference"],
+        PATHINFO_EXTENSION
+    );
+
+    $encoded_dp_mimeType = match (strtolower($fileExtension)) {
+        "jpg", "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        default => "application/octet-stream",
+    };
+
+    // base 64 encoding
+    $encoded_dp = base64_encode($userData["profilePictureFileData"]);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -110,17 +159,25 @@ include("dbcon.php");
         <li class="nav-item mt-3">
             <span class="nav-label">Menu</span>
               <hr class="mt-1 mb-2" style="border-top: 1px solid gray; opacity: 0.5;"/>
-        </li>                
+        </li>
     <li class="nav-item">
-                        <a class="nav-link <?php if($activePage == "studentIndex" || $activePage == "studentEventDetails" || $activePage == "studentFeedback") echo "active"; ?>" href="studentIndex.php">Home</a>
+                        <a class="nav-link <?php if (
+                            $activePage == "studentIndex" ||
+                            $activePage == "studentEventDetails" ||
+                            $activePage == "studentFeedback"
+                        ) {
+                            echo "active";
+                        } ?>" href="studentIndex.php">Home</a>
                     </li>
                     <li class="nav-item mt-3">
         <span class="nav-label">Customize</span>
         <hr class="mt-1 mb-2" style="border-top: 1px solid gray; opacity: 0.5;"/>
     </li>
     <li class="nav-item">
-        <a class="nav-link <?php if($activePage == "studentProfileViewing") echo "active"; ?>" href="studentProfileViewing.php"> Profile</a>
-    </li>                
+        <a class="nav-link <?php if ($activePage == "studentProfileViewing") {
+            echo "active";
+        } ?>" href="studentProfileViewing.php"> Profile</a>
+    </li>
     </ul>
     </div>
         <div class="logout">
@@ -134,10 +191,14 @@ include("dbcon.php");
 <div class="container">
         <div class="row mb-4 align-items-center">
             <div class="col-auto d-flex align-items-center">
-                <?php
-                $profilePic = !empty($dp) ? $dp : 'defaultavatar.jpg'; 
-                ?>
-                <img src="<?php echo $profilePic; ?>" alt="Profile Picture" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
+                <?php if (!empty($encoded_dp)): ?>
+                    <img src="<?php echo "data:" .
+                        $encoded_dp_mimetype .
+                        ";base64," .
+                        $encoded_dp; ?>" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
+                <?php else: ?>
+                    <img src="defaultavatar.jpg" alt="Profile Picture" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
+                <?php endif; ?>
                 <div>
                     <div style="font-weight: bold; font-size: 1rem;"><?php echo $userName; ?></div>
                     <div style="font-size: 0.7rem; color: gray;"><?php echo $email; ?></div>
@@ -160,4 +221,3 @@ include("dbcon.php");
 </html>
 
 </nav>
-
