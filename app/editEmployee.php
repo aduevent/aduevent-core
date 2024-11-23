@@ -1,42 +1,44 @@
 <?php
 session_start();
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION["id"])) {
     header("Location: loginEmployee.php");
-    exit;
+    exit();
 }
 
-include("dbcon.php");
+include "dbcon.php";
 
 // Retrieve user information
-$userId = $_SESSION['id'];
-$userQuery = "SELECT name, email, userTypeID, pin FROM employeeuser WHERE id = ?";
+$userId = $_SESSION["id"];
+$userQuery =
+    "SELECT name, email, userTypeID, pin FROM employeeuser WHERE id = ?";
 $stmt = $conn->prepare($userQuery);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
 
-$userName = $userData['name'];
-$email = $userData['email'];
-$_SESSION['access'] = $userData['userTypeID'];
-$storedPin = $userData['pin']; // Store the user's PIN for comparison
+$userName = $userData["name"];
+$email = $userData["email"];
+$_SESSION["access"] = $userData["userTypeID"];
+$storedPin = $userData["pin"]; // Store the user's PIN for comparison
 
 // Ensure the user is an admin
-if ($_SESSION['access'] != 6) {
+if ($_SESSION["access"] != 6) {
     echo "Access Denied.";
-    exit;
+    exit();
 }
 
-include("adminNavbar.php");
+include "adminNavbar.php";
 
-$empId = $_GET['id'] ?? null;
+$empId = $_GET["id"] ?? null;
 if ($empId === null) {
     echo "Employee ID is required.";
-    exit;
+    exit();
 }
 
 // Fetch employee details
-$empQuery = "SELECT organizationID, employeeNumber, name, email, userTypeID FROM employeeuser WHERE id = ?";
+$empQuery =
+    "SELECT organizationID, employeeNumber, name, email, userTypeID FROM employeeuser WHERE id = ?";
 $stmt = $conn->prepare($empQuery);
 $stmt->bind_param("i", $empId);
 $stmt->execute();
@@ -44,28 +46,37 @@ $empResult = $stmt->get_result();
 $empData = $empResult->fetch_assoc();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $organizationID = (int)$_POST['organizationID'];
-    $employeeNumber = $_POST['employeeNumber'];
-    $name = $_POST['name'];
-    $email = filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
-    $userTypeID = (int)$_POST['userTypeID'];
+    $organizationID = (int) $_POST["organizationID"];
+    $employeeNumber = $_POST["employeeNumber"];
+    $name = $_POST["name"];
+    $email = filter_var($_POST["email"], FILTER_VALIDATE_EMAIL);
+    $userTypeID = (int) $_POST["userTypeID"];
 
     if ($email === false) {
         echo "Invalid email format.";
-        exit;
+        exit();
     }
 
     // Store the entered PIN
-    $enteredPin = $_POST['pin'];
+    $enteredPin = $_POST["pin"];
 
     // Check if the entered PIN matches the stored hashed PIN
     if (!password_verify($enteredPin, $storedPin)) {
         echo '<script>alert("Incorrect PIN. Please try again.");</script>';
     } else {
         // Prepare the update query
-        $updateQuery = "UPDATE employeeuser SET organizationID = ?, employeeNumber = ?, name = ?, email = ?, userTypeID = ? WHERE id = ?";
+        $updateQuery =
+            "UPDATE employeeuser SET organizationID = ?, employeeNumber = ?, name = ?, email = ?, userTypeID = ? WHERE id = ?";
         $stmt = $conn->prepare($updateQuery);
-        $stmt->bind_param("issssi", $organizationID, $employeeNumber, $name, $email, $userTypeID, $empId);
+        $stmt->bind_param(
+            "issssi",
+            $organizationID,
+            $employeeNumber,
+            $name,
+            $email,
+            $userTypeID,
+            $empId
+        );
 
         // Execute the prepared statement
         if ($stmt->execute()) {
@@ -73,7 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     alert("Employee information successfully updated.");
                     window.location.href = "adminEmployeeList.php";
                   </script>';
-            exit;
+            exit();
         } else {
             echo "Error updating employee: " . $stmt->error;
         }
@@ -140,37 +151,61 @@ $userTypeResult = $conn->query($userTypeQuery);
         <div class="form-group">
            <label for="organizationID">Organization</label>
               <select name="organizationID" id="organizationID" class="form-control" required>
-                 <option value="" <?php if (empty($empData['organizationID'])) echo 'selected'; ?>>Select organization</option>
+                 <option value="" <?php if (empty($empData["organizationID"])) {
+                     echo "selected";
+                 } ?>>Select organization</option>
                  <?php while ($orgData = $orgResult->fetch_assoc()) { ?>
-                 <option value="<?php echo $orgData['organizationID']; ?>" <?php if ($empData['organizationID'] == $orgData['organizationID']) echo 'selected'; ?>>
-                <?php echo htmlspecialchars($orgData['organizationName']); ?>
+                 <option value="<?php echo $orgData[
+                     "organizationID"
+                 ]; ?>" <?php if (
+    $empData["organizationID"] == $orgData["organizationID"]
+) {
+    echo "selected";
+} ?>>
+                <?php echo htmlspecialchars($orgData["organizationName"]); ?>
                         </option>
                     <?php } ?>
                 </select>
             </div>
             <div class="form-group">
                 <label for="employeeNumber">Employee Number</label>
-                <input type="text" name="employeeNumber" id="employeeNumber" class="form-control" value="<?php echo htmlspecialchars($empData['employeeNumber']); ?>" required>
+                <input type="text" name="employeeNumber" id="employeeNumber" class="form-control" value="<?php echo htmlspecialchars(
+                    $empData["employeeNumber"]
+                ); ?>" required>
             </div>
             <div class="form-group">
                 <label for="name">Name</label>
-                <input type="text" name="name" id="name" class="form-control" value="<?php echo htmlspecialchars($empData['name']); ?>" required>
+                <input type="text" name="name" id="name" class="form-control" value="<?php echo htmlspecialchars(
+                    $empData["name"]
+                ); ?>" required>
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" name="email" id="email" class="form-control" value="<?php echo htmlspecialchars($empData['email']); ?>" required>
+                <input type="email" name="email" id="email" class="form-control" value="<?php echo htmlspecialchars(
+                    $empData["email"]
+                ); ?>" required>
             </div>
             <div class="form-group">
                 <label for="userTypeID">User Type</label>
                 <select name="userTypeID" id="userTypeID" class="form-control" required>
-                    <?php while ($userTypeData = $userTypeResult->fetch_assoc()) { ?>
-                        <option value="<?php echo $userTypeData['userTypeID']; ?>" <?php if ($empData['userTypeID'] == $userTypeData['userTypeID']) echo 'selected'; ?>>
-                            <?php echo htmlspecialchars($userTypeData['userTypeDescription']); ?>
+                    <?php while (
+                        $userTypeData = $userTypeResult->fetch_assoc()
+                    ) { ?>
+                        <option value="<?php echo $userTypeData[
+                            "userTypeID"
+                        ]; ?>" <?php if (
+    $empData["userTypeID"] == $userTypeData["userTypeID"]
+) {
+    echo "selected";
+} ?>>
+                            <?php echo htmlspecialchars(
+                                $userTypeData["userTypeDescription"]
+                            ); ?>
                         </option>
                     <?php } ?>
                 </select>
             </div>
-            
+
             <button type="button" class="btn btn-primary my-button" data-toggle="modal" data-target="#pinModal">Save Changes</button>
             <a href="adminEmployeeList.php" class="btn btn-secondary my-button" style="min-width: 140px;">Cancel</a>
 
