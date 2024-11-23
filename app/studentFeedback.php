@@ -163,7 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Organization logo on the left
         $orgLogoSize = 30;
-        $aduLogoPath = "C:/xampp/htdocs/capstone/adu.png"; // Path to adu.png
+        $aduLogoPath = "./adu.png"; // Path to adu.png
         $pdf->Image(
             $organizationLogo,
             $yellowLineLeftMargin,
@@ -265,9 +265,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // Save the certificate
-        $certificateFilePath = "certificates/" . $userName . "_certificate.pdf";
-        $pdf->Output($certificateFilePath, "F");
-        if ($recipientEmail && $eventTitle) {
+        // $certificateFilePath = "certificates/" . $userName . "_certificate.pdf";
+        // $pdf->Output($certificateFilePath, "F");
+
+        // output the PDF data as a string instead
+        // (note that under the hood, this is binary)
+        $certificateData = $pdf->Output("", "S");
+
+        // then define the file metadata
+        $certificateFilename = $userName . "_certificate.pdf";
+        $mimeType = "application/pdf";
+
+        // then save the generated PDF file in the files table
+        // (edit) removed it since there seems to be no need
+        /*
+        $save_pdf_stmt = $conn->prepare("
+            INSERT INTO files (filename, data) VALUES (?, ?)
+        ");
+        $save_pdf_stmt->bind_param(
+            "sb",
+            $certificateFilename,
+            $certificateData
+        );
+
+        if ($save_pdf_stmt->execute()) {
+            echo "Failed to save the PDF File: " . $save_pdf_stmt->error;
+            exit();
+        }
+
+        $save_pdf_stmt->close();
+        */
+
+        // removed eventTitle from condition, since for some reason,
+        // some events have empty names
+        if ($recipientEmail) {
             $mail = new PHPMailer(true);
             try {
                 $mail->isSMTP();
@@ -299,7 +330,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                   AdUEvent Team";
 
                 // Attach the PDF certificate
-                $mail->addAttachment($certificateFilePath);
+                // $mail->addAttachment($certificateFilePath);
+
+                // we then attach the PDF certificate in base64
+                // encoding, but this time we're reading from
+                // memory instead of the local file system
+                $mail->addStringAttachment(
+                    $certificateData,
+                    $certificateFilename,
+                    "base64",
+                    "application/pdf"
+                );
 
                 $mail->send();
                 echo "<script>
