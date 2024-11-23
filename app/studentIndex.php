@@ -1,28 +1,29 @@
 <?php
 session_start();
-if (!isset($_SESSION['id']) || !isset($_SESSION['access'])) {
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
     header("Location: loginStudent.php");
-    exit;
+    exit();
 }
-include("dbcon.php");
-$userId = $_SESSION['id'];
+include "dbcon.php";
+$userId = $_SESSION["id"];
 $userQuery = "SELECT name, email, profilePicture FROM studentuser WHERE id = ?";
 $stmt = $conn->prepare($userQuery);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
-$query = "SELECT eventID, eventTitle, organizationName, organizationLogo FROM event INNER JOIN organization ON event.organizationID = organization.organizationID WHERE eventStatus = '1'";
-$result = mysqli_query($conn,$query);      
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
+$query =
+    "SELECT eventID, eventTitle, organizationName, organizationLogo FROM event INNER JOIN organization ON event.organizationID = organization.organizationID WHERE eventStatus = '1'";
+$result = mysqli_query($conn, $query);
 
 $query = "SELECT organizationID, organizationName FROM organization";
 $result = mysqli_query($conn, $query);
 
 if (!$result) {
-    die('Error fetching organizations: ' . mysqli_error($conn));
+    die("Error fetching organizations: " . mysqli_error($conn));
 }
 ?>
 <!DOCTYPE html>
@@ -33,8 +34,10 @@ if (!$result) {
     <title>Student feed</title>
     <link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-..." crossorigin="anonymous">
-    <?php include 'studentNavbar.php';
-    $activePage = "studentIndex.php";?>
+    <?php
+    include "studentNavbar.php";
+    $activePage = "studentIndex.php";
+    ?>
     <style>
         .card {
             position: relative;
@@ -50,7 +53,7 @@ if (!$result) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5); 
+            background: rgba(0, 0, 0, 0.5);
             color: white;
             display: flex;
             align-items: center;
@@ -154,28 +157,28 @@ if (!$result) {
             width: 100%;
         }
         .table th, .table td {
-            font-size: 12px; 
-            padding: 8px; 
+            font-size: 12px;
+            padding: 8px;
             border-top: 1px solid #ccc;
-            border-bottom: 1px solid #ccc; 
+            border-bottom: 1px solid #ccc;
         }
         .table th {
-            background-color: #f0f0f0; 
+            background-color: #f0f0f0;
             position: sticky;
-            top: 0; 
-            z-index: 10; 
+            top: 0;
+            z-index: 10;
         }
         .table tbody tr:nth-child(odd) {
             background-color: #d3d3d3;
         }
         .table tbody tr:nth-child(even) {
-            background-color: #f9f9f9; 
+            background-color: #f9f9f9;
         }
         .table tbody tr:hover {
             background-color: #e0e0e0;
         }
         .btn:not(.btn-primary) {
-            color: #000080 !important; 
+            color: #000080 !important;
             background: none;
             border: none;
             padding: 0;
@@ -197,12 +200,14 @@ if (!$result) {
     </div>
     <div class="container">
         <?php
-            $currentMonth = date('F');
-            $currentYear = date('Y');
+        $currentMonth = date("F");
+        $currentYear = date("Y");
         ?>
         <div class="row mb-5" style="margin-left: 5px;">
             <div class="col">
-                <h5>Here is the line-up of events for <?php echo $currentMonth . ', ' . $currentYear; ?> you might be interested in</h5>
+                <h5>Here is the line-up of events for <?php echo $currentMonth .
+                    ", " .
+                    $currentYear; ?> you might be interested in</h5>
                     <div id="eventsCarousel" class="carousel slide" data-bs-ride="carousel">
                     <button class="carousel-control-prev" type="button" data-bs-target="#eventsCarousel" data-bs-slide="prev" style="background-color: #000080; width: 40px; height: 40px; border-radius: 50%; top: 50%;">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -210,57 +215,77 @@ if (!$result) {
             </button>
                         <div class="carousel-inner">
                             <?php
-                                $monthNumber = date('m'); // Month as a number
-                                $eventQuery = "SELECT e.eventID, e.eventTitle, e.eventDate, e.eventPhoto, o.organizationName 
-                                    FROM event e JOIN organization o ON e.organizationID = o.organizationID 
+                            $monthNumber = date("m"); // Month as a number
+                            $eventQuery = "SELECT e.eventID, e.eventTitle, e.eventDate, e.eventPhoto, o.organizationName
+                                    FROM event e JOIN organization o ON e.organizationID = o.organizationID
                                     WHERE MONTH(e.eventDate) = ? AND YEAR(e.eventDate) = ? AND eventStatus = '1'
                                     ORDER BY e.eventDate ASC";
-                                $stmt = $conn->prepare($eventQuery);
-                                $stmt->bind_param("ii", $monthNumber, $currentYear);
-                                $stmt->execute();
-                                $eventResult = $stmt->get_result();
+                            $stmt = $conn->prepare($eventQuery);
+                            $stmt->bind_param("ii", $monthNumber, $currentYear);
+                            $stmt->execute();
+                            $eventResult = $stmt->get_result();
 
-                                if ($eventResult->num_rows > 0) {
-                                $activeClass = 'active';
+                            if ($eventResult->num_rows > 0) {
+                                $activeClass = "active";
                                 $counter = 0;
-                                while ($eventRow = $eventResult->fetch_assoc()) {
-                                if ($counter % 3 == 0) {
-                                    echo '<div class="carousel-item ' . $activeClass . '">';
-                                    echo '<div class="row">';
-                                    $activeClass = '';
-                                }
-                            ?>
+                                while (
+                                    $eventRow = $eventResult->fetch_assoc()
+                                ) {
+                                    if ($counter % 3 == 0) {
+                                        echo '<div class="carousel-item ' .
+                                            $activeClass .
+                                            '">';
+                                        echo '<div class="row">';
+                                        $activeClass = "";
+                                    } ?>
                                 <div class="col-md-4">
                                     <div class="card">
-                                        <img src="<?php echo $eventRow["eventPhoto"]; ?>" class="card-img-top img-fluid event-photo" alt="Event Image">
+                                        <img src="<?php echo $eventRow[
+                                            "eventPhoto"
+                                        ]; ?>" class="card-img-top img-fluid event-photo" alt="Event Image">
                                             <div class="card-body p-2">
-                                                <h5 class="card-title text-truncate mb-1"><?php echo $eventRow["eventTitle"]; ?></h5>
-                                                <p class="card-text text-truncate mb-1"><?php echo date('F d, Y', strtotime($eventRow["eventDate"])); ?></p>
-                                                <p class="card-text text-truncate mb-1"><small class="text-muted"><?php echo $eventRow["organizationName"]; ?></small></p>
+                                                <h5 class="card-title text-truncate mb-1"><?php echo $eventRow[
+                                                    "eventTitle"
+                                                ]; ?></h5>
+                                                <p class="card-text text-truncate mb-1"><?php echo date(
+                                                    "F d, Y",
+                                                    strtotime(
+                                                        $eventRow["eventDate"]
+                                                    )
+                                                ); ?></p>
+                                                <p class="card-text text-truncate mb-1"><small class="text-muted"><?php echo $eventRow[
+                                                    "organizationName"
+                                                ]; ?></small></p>
                                             </div>
                                             <div class="overlay">
                                                 <form action="studentEventDetails.php" method="GET">
-                                                    <input type="hidden" name="eventID" value="<?php echo $eventRow["eventID"]; ?>">
+                                                    <input type="hidden" name="eventID" value="<?php echo $eventRow[
+                                                        "eventID"
+                                                    ]; ?>">
                                                     <button type="submit" class="btn btn-primary">View</button>
                                                 </form>
                                             </div>
                                         </div>
-                                    </div>                        
+                                    </div>
                     <?php
-                        $counter++;
-                            if ($counter % 3 == 0 || $counter == $eventResult->num_rows) {
-                                echo '</div>';
-                                echo '</div>';
-                        }
+                    $counter++;
+                    if (
+                        $counter % 3 == 0 ||
+                        $counter == $eventResult->num_rows
+                    ) {
+                        echo "</div>";
+                        echo "</div>";
                     }
-                } else {
-                    echo '<div class="carousel-item active">';
-                    echo '<div class="d-flex justify-content-center align-items-center" style="height: 200px;">';
-                    echo '<h5>No Event Coming Up this Month</h5>';
-                    echo '</div>';
-                    echo '</div>';
-                }
-                ?>
+
+                                }
+                            } else {
+                                echo '<div class="carousel-item active">';
+                                echo '<div class="d-flex justify-content-center align-items-center" style="height: 200px;">';
+                                echo "<h5>No Event Coming Up this Month</h5>";
+                                echo "</div>";
+                                echo "</div>";
+                            }
+                            ?>
             </div>
             <button class="carousel-control-next" type="button" data-bs-target="#eventsCarousel" data-bs-slide="next" style="background-color: #000080;width: 40px; height: 40px; border-radius: 50%; top: 50%;">
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
@@ -278,12 +303,18 @@ if (!$result) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($organization = mysqli_fetch_assoc($result)): ?>
+                    <?php while (
+                        $organization = mysqli_fetch_assoc($result)
+                    ): ?>
                     <tr>
-                        <td><?= htmlspecialchars($organization['organizationName']); ?></td>
+                        <td><?= htmlspecialchars(
+                            $organization["organizationName"]
+                        ) ?></td>
                         <td>
                             <form action="studentRsoList.php" method="GET" style="display: inline;">
-                                <input type="hidden" name="organizationID" value="<?= htmlspecialchars($organization['organizationID']); ?>">
+                                <input type="hidden" name="organizationID" value="<?= htmlspecialchars(
+                                    $organization["organizationID"]
+                                ) ?>">
                                 <button type="submit" class="btn">
                                     <i class="fas fa-eye"></i> <!-- Font Awesome eye icon -->
                                 </button>
