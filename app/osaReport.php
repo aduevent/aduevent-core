@@ -23,7 +23,7 @@ $orgResult = mysqli_query($conn, $orgQuery);
 
 // Fetch point system categories for dropdown
 $pointSystemQuery =
-    "SELECT pointSystemCategoryID, pointSystemCategoryDescription FROM pointSystemCategory";
+    "SELECT pointSystemCategoryID, pointSystemCategoryDescription FROM pointsystemcategory";
 $pointSystemResult = mysqli_query($conn, $pointSystemQuery);
 ?>
 
