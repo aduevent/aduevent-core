@@ -2,66 +2,125 @@
 session_start();
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-require '../vendor/autoload.php';
-if (!isset($_SESSION['id']) || !isset($_SESSION['access'])) {
+require "../vendor/autoload.php";
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
     header("Location: loginStudent.php");
-    exit;
+    exit();
 }
-$studentID = $_SESSION['id'];
-include("dbcon.php");
+$studentID = $_SESSION["id"];
+include "dbcon.php";
 
-$userId = $_SESSION['id'];
+$userId = $_SESSION["id"];
 
-$userQuery = "SELECT name, email, profilePicture FROM studentuser WHERE id = ?";
+$userQuery = "SELECT
+        studentuser.name,
+        studentuser.email,
+        studentuser.profilePicture,
+        files.id AS profilePictureFileReference,
+        files.filename AS profilePictureFileName,
+        files.data AS profilePictureFileData
+    FROM
+        studentuser
+    LEFT JOIN
+        files
+    ON
+        studentuser.profilePictureFileReference = files.id
+    WHERE
+        studentuser.id = ?";
 $stmt = $conn->prepare($userQuery);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
+$userName = $userData["name"];
+$email = $userData["email"];
+// $dp = $userData["profilePicture"];
 $stmt->close();
 
-if (isset($_POST['upload'])) {
-    $targetDir = "uploads/";
-    $targetFile = $targetDir . basename($_FILES["image"]["name"]);
+// use the stored asset as the default
+$dp = "defaultavatar.jpg";
+
+$encoded_dp = null;
+$encoded_dp_mimetype = null;
+
+if (!empty($userData["profilePictureFileReference"])) {
+    $fileExtension = pathinfo(
+        $userData["profilePictureFileReference"],
+        PATHINFO_EXTENSION
+    );
+
+    $encoded_dp_mimeType = match (strtolower($fileExtension)) {
+        "jpg", "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        default => "application/octet-stream",
+    };
+
+    // base 64 encoding
+    $encoded_dp = base64_encode($userData["profilePictureFileData"]);
+}
+
+if (isset($_POST["upload"])) {
+    $validMimetypes = ["image/jpeg", "image/png", "image/gif"];
+    $file = $_FILES["image"];
     $uploadOk = 1;
-    $imageFileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
 
-    $check = getimagesize($_FILES["image"]["tmp_name"]);
-    if ($check !== false) {
-        $uploadOk = 1;
-    } else {
-        echo "<script>alert('File is not an image.');</script>";
-        $uploadOk = 0;
-    }
-
-    if ($_FILES["image"]["size"] > 5000000) {
+    if ($file["size"] > 5000000) {
         echo "<script>alert('Sorry, your file is too large.');</script>";
         $uploadOk = 0;
     }
 
-    if ($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif") {
-        echo "<script>alert('Sorry, only JPG, JPEG, PNG & GIF files are allowed.');</script>";
+    if (!in_array($file["type"], $validMimetypes)) {
+        echo "<script>alert('File is not an image.');</script>";
         $uploadOk = 0;
     }
+
     if ($uploadOk == 0) {
         echo "<script>alert('Sorry, your file was not uploaded.');</script>";
     } else {
-        if (move_uploaded_file($_FILES["image"]["tmp_name"], $targetFile)) {
-            $updateQuery = "UPDATE studentuser SET profilePicture = ? WHERE id = ?";
-            $stmt = $conn->prepare($updateQuery);
-            $stmt->bind_param("si", $targetFile, $studentID);
+        // upload file to files table
+        $null = null;
+        $fileContents = file_get_contents($file["tmp_name"]);
+        $isUploaded = false;
+        $insertedFileID = null;
+
+        $file_store_stmt = $conn->prepare(
+            "INSERT INTO files (filename, data) VALUES (?, ?)"
+        );
+        $file_store_stmt->bind_param("sb", $file["name"], $null);
+        $file_store_stmt->send_long_data(1, $fileContents);
+
+        if ($file_store_stmt->execute()) {
+            $isUploaded = true;
+            $insertedFileID = $conn->insert_id;
+        } else {
+            echo "Failed to upload file: " . $file_store_stmt->error;
+        }
+
+        if ($isUploaded == true && !empty($insertedFileID)) {
+            $stmt = $conn->prepare(
+                "UPDATE studentuser SET profilePictureFileReference = ? WHERE id = ?"
+            );
+            $stmt->bind_param("is", $insertedFileID, $studentID);
+
             if ($stmt->execute()) {
                 echo "<script>alert('Profile picture uploaded successfully.');</script>";
-                $dp = $targetFile; 
+
+                $fileExtension = pathinfo($insertedFileID, PATHINFO_EXTENSION);
+                $encoded_dp_mimeType = match (strtolower($fileExtension)) {
+                    "jpg", "jpeg" => "image/jpeg",
+                    "png" => "image/png",
+                    "gif" => "image/gif",
+                    default => "application/octet-stream",
+                };
+
+                // base 64 encoding
+                $encoded_dp = base64_encode($fileContents);
             } else {
                 echo "<script>alert('Error updating profile picture in the database.');</script>";
             }
+
             $stmt->close();
-        } else {
-            echo "<script>alert('Sorry, there was an error uploading your file.');</script>";
         }
     }
 }
@@ -76,8 +135,10 @@ if (isset($_POST['upload'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <?php include 'studentNavbar.php'; 
-    $activePage = "studentprofileViewing.php"; ?>
+    <?php
+    include "studentNavbar.php";
+    $activePage = "studentProfileViewing.php";
+    ?>
     <style>
         .card {
             border: none;
@@ -113,13 +174,18 @@ if (isset($_POST['upload'])) {
                 <div class="card h-100">
                     <div class="card-body d-flex justify-content-center flex-column align-items-center">
                         <div style="position: relative; display: inline-block;">
-                            <?php if ($dp): ?>
-                                <img src="<?php echo htmlspecialchars($dp); ?>" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 200px; height: 200px; box-shadow: 0 0 0 2px gray;">
+                            <?php if (!empty($encoded_dp)): ?>
+                                <img src="<?php echo "data:" .
+                                    $encoded_dp_mimetype .
+                                    ";base64," .
+                                    $encoded_dp; ?>" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 200px; height: 200px; box-shadow: 0 0 0 2px gray; object-fit: cover;">
                                 <?php else: ?>
                                     <img src="defaultavatar.jpg" alt="Default Profile Picture" class="img-fluid rounded-circle" style="max-width: 200px; box-shadow: 0 0 0 2px gray;">
                                     <?php endif; ?>
-                                    <div id="profile-pic-container" style="text-align: center;">
-                                        <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="POST" enctype="multipart/form-data">
+                                    <div id="profile-pic-container" style="text-align: center; margin-top: 8px;">
+                                        <form action="<?php echo htmlspecialchars(
+                                            $_SERVER["PHP_SELF"]
+                                        ); ?>" method="POST" enctype="multipart/form-data">
                                             <label for="image" class="btn" style="background-color: #02248A; color: white; padding: 6px 12px; font-size: 12px; border-radius: 30px;">
                                                 <i class="bi bi-pencil" style="font-size: 12px; margin-right: 4px;"></i> Upload Profile Picture
                                             </label>
@@ -128,7 +194,9 @@ if (isset($_POST['upload'])) {
                                         </form>
                                     </div>
                                 </div>
-                                <h2><?php echo htmlspecialchars($userName); ?></h2>
+                                <h2 style="margin: 8px 0;">
+                                    <?php echo htmlspecialchars($userName); ?>
+                                </h2>
                                 <p><?php echo htmlspecialchars($email); ?></p>
                             </div>
                         </div>
