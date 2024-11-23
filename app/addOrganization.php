@@ -1,58 +1,63 @@
 <?php
 session_start();
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION["id"])) {
     header("Location: loginEmployee.php");
-    exit;
+    exit();
 }
 
-include("dbcon.php");
-$userId = $_SESSION['id'];
-$userQuery = "SELECT name, email, profilePicture, userTypeID FROM employeeuser WHERE id = ?";
+include "dbcon.php";
+$userId = $_SESSION["id"];
+$userQuery =
+    "SELECT name, email, profilePicture, userTypeID FROM employeeuser WHERE id = ?";
 $stmt = $conn->prepare($userQuery);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
 
-$_SESSION['access'] = $userData['userTypeID'];
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
-$access = $_SESSION['access'];
+$_SESSION["access"] = $userData["userTypeID"];
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
+$access = $_SESSION["access"];
 
 if ($access != 6) {
     echo "Access Denied.";
-    exit;
+    exit();
 }
 
-include("adminNavbar.php");
+include "adminNavbar.php";
 $activePage = "addOrganization";
 
 // Fetch organization types for dropdown
-$orgTypeQuery = "SELECT organizationTypeID, organizationTypeName FROM organizationtype";
+$orgTypeQuery =
+    "SELECT organizationTypeID, organizationTypeName FROM organizationtype";
 $orgTypeResult = $conn->query($orgTypeQuery);
 
 // Initialize a success message variable
-$successMessage = '';
+$successMessage = "";
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Retrieve form data
-    $organizationName = $_POST['organizationName'];
-    $organizationTypeID = $_POST['organizationTypeID'];
-    $organizationEmail = $_POST['organizationEmail'];
+    $organizationName = $_POST["organizationName"];
+    $organizationTypeID = $_POST["organizationTypeID"];
+    $organizationEmail = $_POST["organizationEmail"];
     $logoPath = null; // Initialize logoPath
 
     // Handle file upload (if logo is uploaded)
-    if (isset($_FILES['organizationLogo']) && $_FILES['organizationLogo']['error'] == 0) {
-        $logoFile = $_FILES['organizationLogo'];
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif']; // Allowed file types
-        $uploadDir = 'uploads/'; // Directory to save uploaded files
-        $logoPath = $uploadDir . basename($logoFile['name']); // Save the file path
+    if (
+        isset($_FILES["organizationLogo"]) &&
+        $_FILES["organizationLogo"]["error"] == 0
+    ) {
+        $logoFile = $_FILES["organizationLogo"];
+        $allowedTypes = ["image/jpeg", "image/png", "image/gif"]; // Allowed file types
+        $uploadDir = "uploads/"; // Directory to save uploaded files
+        $logoPath = $uploadDir . basename($logoFile["name"]); // Save the file path
 
         // Validate file type
-        if (in_array($logoFile['type'], $allowedTypes)) {
+        if (in_array($logoFile["type"], $allowedTypes)) {
             // Move the uploaded file to the designated folder
-            if (move_uploaded_file($logoFile['tmp_name'], $logoPath)) {
+            if (move_uploaded_file($logoFile["tmp_name"], $logoPath)) {
                 // Logo uploaded successfully
             } else {
                 echo "Error uploading logo file.";
@@ -65,8 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Prepare SQL statement to insert the new organization
-    $stmt = $conn->prepare("INSERT INTO organization (organizationName, organizationTypeID, organizationLogo, organizationEmail) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $organizationName, $organizationTypeID, $logoPath, $organizationEmail);
+    $stmt = $conn->prepare(
+        "INSERT INTO organization (organizationName, organizationTypeID, organizationLogo, organizationEmail) VALUES (?, ?, ?, ?)"
+    );
+    $stmt->bind_param(
+        "ssss",
+        $organizationName,
+        $organizationTypeID,
+        $logoPath,
+        $organizationEmail
+    );
 
     if ($stmt->execute()) {
         // Set success message
@@ -76,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             alert('$successMessage');
             window.location.href='adminIndex.php';
         </script>";
-        exit;
+        exit();
     } else {
         echo "Error: " . $stmt->error;
     }
@@ -123,8 +136,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label for="organizationTypeID">Organization Type</label>
                 <select class="form-control" id="organizationTypeID" name="organizationTypeID" required>
                     <option value="">Select Organization Type</option>
-                    <?php while ($orgTypeData = $orgTypeResult->fetch_assoc()) { ?>
-                        <option value="<?php echo $orgTypeData['organizationTypeID']; ?>"><?php echo $orgTypeData['organizationTypeName']; ?></option>
+                    <?php while (
+                        $orgTypeData = $orgTypeResult->fetch_assoc()
+                    ) { ?>
+                        <option value="<?php echo $orgTypeData[
+                            "organizationTypeID"
+                        ]; ?>"><?php echo $orgTypeData[
+    "organizationTypeName"
+]; ?></option>
                     <?php } ?>
                 </select>
             </div>
