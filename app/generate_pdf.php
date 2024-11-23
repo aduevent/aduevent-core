@@ -15,7 +15,7 @@ $userName = isset($_GET["userName"]) ? $_GET["userName"] : "";
 $query = "SELECT e.*, o.organizationName, p.pointSystemCategoryDescription
           FROM event e
           JOIN organization o ON e.organizationID = o.organizationID
-          JOIN pointSystemCategory p ON e.pointSystemCategoryID = p.pointSystemCategoryID
+          JOIN pointsystemcategory p ON e.pointSystemCategoryID = p.pointSystemCategoryID
           WHERE e.eventStatus = 1 AND e.eventDate < NOW()";
 
 // Apply filters
