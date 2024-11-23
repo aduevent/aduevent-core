@@ -52,7 +52,10 @@ $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
 // First day of the current month (used for aligning the calendar)
 $firstDayOfMonth = date("N", strtotime("$year-$month-01"));
-$clickedDate = isset($_GET["date"]) ? $_GET["date"] : null;
+
+// avoid setting date to null
+$date = new DateTime();
+$clickedDate = isset($_GET["date"]) ? $_GET["date"] : $date->format("Y-m-d");
 
 // Fetch notes for the selected date
 $notesQuery = "SELECT noteContent FROM eventnotes WHERE noteDate = '$clickedDate' AND createdBy ='$userId'";
