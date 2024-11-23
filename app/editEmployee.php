@@ -46,7 +46,15 @@ $empResult = $stmt->get_result();
 $empData = $empResult->fetch_assoc();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $organizationID = (int) $_POST["organizationID"];
+    $organizationID = null;
+
+    if (
+        isset($_POST["organizationID"]) &&
+        strlen($_POST["organizationID"]) > 0
+    ) {
+        $organizationID = (int) $_POST["organizationID"];
+    }
+
     $employeeNumber = $_POST["employeeNumber"];
     $name = $_POST["name"];
     $email = filter_var($_POST["email"], FILTER_VALIDATE_EMAIL);
@@ -66,17 +74,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         // Prepare the update query
         $updateQuery =
-            "UPDATE employeeuser SET organizationID = ?, employeeNumber = ?, name = ?, email = ?, userTypeID = ? WHERE id = ?";
+            "UPDATE employeeuser SET employeeNumber = ?, name = ?, email = ?, userTypeID = ?";
+
+        // some employees may not have an organizationID
+        if (isset($organizationID) || !is_null($organizationID)) {
+            $updateQuery .= ", organizationID = ?";
+        }
+
+        $updateQuery .= " WHERE id = ?";
+
         $stmt = $conn->prepare($updateQuery);
-        $stmt->bind_param(
-            "issssi",
-            $organizationID,
-            $employeeNumber,
-            $name,
-            $email,
-            $userTypeID,
-            $empId
-        );
+
+        if (isset($organizationID) || !is_null($organizationID)) {
+            $stmt->bind_param(
+                "issssi",
+                $employeeNumber,
+                $name,
+                $email,
+                $userTypeID,
+                $organizationID,
+                $empId
+            );
+        } else {
+            $stmt->bind_param(
+                "ssssi",
+                $employeeNumber,
+                $name,
+                $email,
+                $userTypeID,
+                $empId
+            );
+        }
 
         // Execute the prepared statement
         if ($stmt->execute()) {
@@ -86,6 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                   </script>';
             exit();
         } else {
+            var_dump($organizationID);
             echo "Error updating employee: " . $stmt->error;
         }
     }
