@@ -1,6 +1,6 @@
 <?php
-$activePage = basename($_SERVER['PHP_SELF'], ".php");
-include("dbcon.php");
+$activePage = basename($_SERVER["PHP_SELF"], ".php");
+include "dbcon.php";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -112,19 +112,49 @@ include("dbcon.php");
     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link <?php if($activePage == "rsoIndex" || $activePage == "rsoSearchResult" || $activePage = "rsoDetailViewing") echo "active"; ?>" href="rsoIndex.php">Home</a>
+                        <a class="nav-link <?php if (
+                            $activePage == "rsoIndex" ||
+                            $activePage == "rsoSearchResult" ||
+                            $activePage == "rsoDetailViewing"
+                        ) {
+                            echo "active";
+                        } ?>" href="rsoIndex.php">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php if($activePage == "rsoEventHub" || $activePage == "rsoDocumentViewing" || $activePage == "rsoFeedbackFormCreation" || $activePage == "rsoViewRegistrations" || $activePage == "rsoEditPromotion" || $activePage == "rsoEditProposal" || $activePage == "rsoEventPerformance" || $activePage == "rsoRegistration") echo "active"; ?>" href="rsoEventHub.php">Events Hub</a>
+                        <a class="nav-link <?php if (
+                            $activePage == "rsoEventHub" ||
+                            $activePage == "rsoDocumentViewing" ||
+                            $activePage == "rsoFeedbackFormCreation" ||
+                            $activePage == "rsoViewRegistrations" ||
+                            $activePage == "rsoEditPromotion" ||
+                            $activePage == "rsoEditProposal" ||
+                            $activePage == "rsoEventPerformance" ||
+                            $activePage == "rsoRegistration"
+                        ) {
+                            echo "active";
+                        } ?>" href="rsoEventHub.php">Events Hub</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php if($activePage == "rsoActivityForm") echo "active"; ?>" href="rsoActivityForm.php">Activity Form</a>
+                        <a class="nav-link <?php if (
+                            $activePage == "rsoActivityForm"
+                        ) {
+                            echo "active";
+                        } ?>" href="rsoActivityForm.php">Activity Form</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php if($activePage == "rsoDashboard") echo "active"; ?>" href="rsoDashboard.php">Dashboard</a>
+                        <a class="nav-link <?php if (
+                            $activePage == "rsoDashboard"
+                        ) {
+                            echo "active";
+                        } ?>" href="rsoDashboard.php">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php if($activePage == "rsoCalendarView" || $activePage == "rsoEventCalendar") echo "active"; ?>" href="rsoCalendarView.php">Calendar</a>
+                        <a class="nav-link <?php if (
+                            $activePage == "rsoCalendarView" ||
+                            $activePage == "rsoEventCalendar"
+                        ) {
+                            echo "active";
+                        } ?>" href="rsoCalendarView.php">Calendar</a>
                     </li>
                     <li class="nav-item mt-3">
                     <li class="nav-item mt-3">
@@ -134,7 +164,9 @@ include("dbcon.php");
 
     <!-- Profile Nav Link -->
     <li class="nav-item">
-        <a class="nav-link <?php if($activePage == "rsoProfileViewing") echo "active"; ?>" href="rsoProfileViewing.php">Profile</a>
+        <a class="nav-link <?php if ($activePage == "rsoProfileViewing") {
+            echo "active";
+        } ?>" href="rsoProfileViewing.php">Profile</a>
                     </li>
         </ul>
     </div>
@@ -150,10 +182,8 @@ include("dbcon.php");
         <div class="row mb-4 align-items-center">
             <div class="col-auto d-flex align-items-center">
                 <!-- Display Picture -->
-                <?php 
-                // Check if profile picture exists; if not, use default profile picture
-                $profilePic = !empty($dp) ? $dp : 'defaultavatar.jpg'; 
-                ?>
+                <?php // Check if profile picture exists; if not, use default profile picture
+                $profilePic = !empty($dp) ? $dp : "defaultavatar.jpg"; ?>
                 <img src="<?php echo $profilePic; ?>" alt="Profile Picture" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
 
                 <!-- Name and Email -->
