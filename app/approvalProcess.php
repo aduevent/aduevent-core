@@ -143,7 +143,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                          AdUEvent Team";
 
                         $mail->send();
-                        echo "Notification email has been sent";
+                        // echo "Notification email has been sent";
+                        header("Location: approverEventApproval.php");
+                        exit();
                     } catch (Exception $e) {
                         echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
                     }
