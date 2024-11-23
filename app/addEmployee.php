@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST["name"];
     $email = $_POST["email"];
     $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
-    $pin = $_POST["pin"];
+    // $pin = $_POST["pin"];
 
     $insertQuery =
         "INSERT INTO employeeuser (organizationID, employeeNumber, name, email, password, userTypeID) VALUES (?, ?, ?, ?, ?, ?)";
@@ -177,10 +177,12 @@ $userTypeResult = $conn->query($userTypeQuery);
                     <?php } ?>
                 </select>
             </div>
+            <!--
             <div class="form-group">
                 <label for="pin">PIN</label>
                 <input type="text" class="form-control" name="pin" id="pin" required>
             </div>
+            -->
             <button type="submit" class="btn btn-primary my-button">Add Employee</button>
             <a href="adminEmployeeList.php" class="btn btn-secondary my-button">Cancel</a>
         </form>
