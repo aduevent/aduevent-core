@@ -1,31 +1,31 @@
 <?php
-session_start(); 
-if (!isset($_SESSION['id']) || !isset($_SESSION['access'])) {
+session_start();
+if (!isset($_SESSION["id"]) || !isset($_SESSION["access"])) {
     header("Location: loginStudent.php");
-    exit;
+    exit();
 }
-include("dbcon.php");
+include "dbcon.php";
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-require '../vendor/autoload.php';
-require('libraries/fpdf.php'); // Include FPDF library for PDF generation
+require "../vendor/autoload.php";
+require "./libraries/fpdf.php"; // Include FPDF library for PDF generation
 
-$userId = $_SESSION['id'];
+$userId = $_SESSION["id"];
 $feedbackSuccess = false;
 $userQuery = "SELECT name, email, profilePicture FROM studentuser WHERE id = ?";
 $stmt = $conn->prepare($userQuery);
-$stmt->bind_param("i", $userId); 
+$stmt->bind_param("i", $userId);
 $stmt->execute();
 $userResult = $stmt->get_result();
 $userData = $userResult->fetch_assoc();
-$userName = $userData['name'];
-$email = $userData['email'];
-$dp = $userData['profilePicture'];
+$userName = $userData["name"];
+$email = $userData["email"];
+$dp = $userData["profilePicture"];
 
-if (isset($_GET['eventID'])) {
-    $eventID = $_GET['eventID'];
-    $feedbackQuery = "SELECT f.question1, f.question2, f.question3, f.question4, f.question5, 
-                         f.question6, f.question7, f.question8, f.question9, f.question10, 
+if (isset($_GET["eventID"])) {
+    $eventID = $_GET["eventID"];
+    $feedbackQuery = "SELECT f.question1, f.question2, f.question3, f.question4, f.question5,
+                         f.question6, f.question7, f.question8, f.question9, f.question10,
                          e.eventTitle
                   FROM feedback f
                   JOIN event e ON f.eventID = e.eventID
@@ -36,28 +36,38 @@ if (isset($_GET['eventID'])) {
     $feedbackResult = $stmt->get_result();
     if ($feedbackResult->num_rows > 0) {
         $feedback = $feedbackResult->fetch_assoc(); // Fetch questions and eventTitle
-        $eventTitle = $feedback['eventTitle']; // Store the event title
+        $eventTitle = $feedback["eventTitle"]; // Store the event title
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $eventID = $_POST['eventID'];
-    $userID = $_POST['userID'];
-    $response = !empty($_POST['response']) ? $_POST['response'] : NULL;
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $eventID = $_POST["eventID"];
+    $userID = $_POST["userID"];
+    $response = !empty($_POST["response"]) ? $_POST["response"] : null;
     $ratings = [];
-    
+
     for ($i = 1; $i <= 10; $i++) {
-        $ratings[$i] = isset($_POST['rating'][$i]) ? $_POST['rating'][$i] : NULL;
+        $ratings[$i] = isset($_POST["rating"][$i])
+            ? $_POST["rating"][$i]
+            : null;
     }
-    $query = "INSERT INTO feedbackresponse (eventID, id, rating1, rating2, rating3, rating4, rating5, rating6, rating7, rating8, rating9, rating10, response) 
+    $query = "INSERT INTO feedbackresponse (eventID, id, rating1, rating2, rating3, rating4, rating5, rating6, rating7, rating8, rating9, rating10, response)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($query);
     $stmt->bind_param(
         "iiissssssssss",
         $eventID,
         $userID,
-        $ratings[1], $ratings[2], $ratings[3], $ratings[4], $ratings[5], 
-        $ratings[6], $ratings[7], $ratings[8], $ratings[9], $ratings[10],
+        $ratings[1],
+        $ratings[2],
+        $ratings[3],
+        $ratings[4],
+        $ratings[5],
+        $ratings[6],
+        $ratings[7],
+        $ratings[8],
+        $ratings[9],
+        $ratings[10],
         $response
     );
 
@@ -66,15 +76,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Fetch event details and organization info
         $eventQuery = "
-            SELECT e.eventTitle, e.eventDate, e.eventVenue, e.organizationID, 
-                   o.organizationName, o.organizationLogo 
+            SELECT e.eventTitle, e.eventDate, e.eventVenue, e.organizationID,
+                   o.organizationName, o.organizationLogo
             FROM event e
             JOIN organization o ON e.organizationID = o.organizationID
             WHERE e.eventID = ?";
         $eventStmt = $conn->prepare($eventQuery);
         $eventStmt->bind_param("i", $eventID);
         $eventStmt->execute();
-        $eventStmt->bind_result($eventTitle, $eventDate, $eventVenue, $organizationID, $organizationName, $organizationLogo);
+        $eventStmt->bind_result(
+            $eventTitle,
+            $eventDate,
+            $eventVenue,
+            $organizationID,
+            $organizationName,
+            $organizationLogo
+        );
         $eventStmt->fetch();
         $eventStmt->close();
 
@@ -87,152 +104,190 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $emailStmt->close();
 
         class PDF extends FPDF
-{
-    // Path to the logo image
-    protected $watermarkImage = 'adueventwatermark.png';
-    protected $backgroundImage = 'certificate.png';
+        {
+            // Path to the logo image
+            protected $watermarkImage = "adueventwatermark.png";
+            protected $backgroundImage = "certificate.png";
 
-    // Override header function to add background and watermark to each page
-    function Header()
-    {
-        // Add background image first
-        $this->Image($this->backgroundImage, 0, 0, 297, 210);
+            // Override header function to add background and watermark to each page
+            function Header()
+            {
+                // Add background image first
+                $this->Image($this->backgroundImage, 0, 0, 297, 210);
 
-        // Get page dimensions
-        $width = $this->GetPageWidth();
-        $height = $this->GetPageHeight();
+                // Get page dimensions
+                $width = $this->GetPageWidth();
+                $height = $this->GetPageHeight();
 
-        // Set watermark size and position to be centered and half the page width
-        $imageWidth = $width / 3;
-        $imageHeight = $height / 2;
-        $xPosition = ($width - $imageWidth) / 2;
-        $yPosition = ($height - $imageHeight) / 2;
+                // Set watermark size and position to be centered and half the page width
+                $imageWidth = $width / 3;
+                $imageHeight = $height / 2;
+                $xPosition = ($width - $imageWidth) / 2;
+                $yPosition = ($height - $imageHeight) / 2;
 
-        // Add watermark image on top of the background
-        $this->Image($this->watermarkImage, $xPosition, $yPosition, $imageWidth, $imageHeight);
-    }
-}   
-    
-$pdf = new PDF('L','mm','A4');
-$pdf->SetMargins(20, 20, 20);
-$pdf->AddPage();
-//$backgroundPath = 'C:/xampp/htdocs/capstone/certificate.png';
-//$pdf->Image($backgroundPath, 0, 0, 297, 210); // Fill the page with the background
+                // Add watermark image on top of the background
+                $this->Image(
+                    $this->watermarkImage,
+                    $xPosition,
+                    $yPosition,
+                    $imageWidth,
+                    $imageHeight
+                );
+            }
+        }
 
-// Define the yellow line margins based on measurement
-$yellowLineLeftMargin = 35; // Adjust based on measurement
-$yellowLineRightMargin = 35; // Adjust based on measurement
-$yellowLineTopMargin = 25; // Adjust based on measurement
-$yellowLineBottomMargin = 25; // Adjust based on measurement
+        $pdf = new PDF("L", "mm", "A4");
+        $pdf->SetMargins(20, 20, 20);
+        $pdf->AddPage();
+        //$backgroundPath = 'C:/xampp/htdocs/capstone/certificate.png';
+        //$pdf->Image($backgroundPath, 0, 0, 297, 210); // Fill the page with the background
 
-// Set margins based on yellow line area
-$pdf->SetMargins($yellowLineLeftMargin, $yellowLineTopMargin, $yellowLineRightMargin);
-$pdf->SetAutoPageBreak(true, $yellowLineBottomMargin);
+        // Define the yellow line margins based on measurement
+        $yellowLineLeftMargin = 35; // Adjust based on measurement
+        $yellowLineRightMargin = 35; // Adjust based on measurement
+        $yellowLineTopMargin = 25; // Adjust based on measurement
+        $yellowLineBottomMargin = 25; // Adjust based on measurement
 
-// Set initial cursor position within the yellow area
-$pdf->SetXY($yellowLineLeftMargin, $yellowLineTopMargin + 5); // Adjust as needed
+        // Set margins based on yellow line area
+        $pdf->SetMargins(
+            $yellowLineLeftMargin,
+            $yellowLineTopMargin,
+            $yellowLineRightMargin
+        );
+        $pdf->SetAutoPageBreak(true, $yellowLineBottomMargin);
 
-// Now start adding content within the margins
+        // Set initial cursor position within the yellow area
+        $pdf->SetXY($yellowLineLeftMargin, $yellowLineTopMargin + 5); // Adjust as needed
 
-// Organization logo on the left
-$orgLogoSize = 30;
-$aduLogoPath = 'C:/xampp/htdocs/capstone/adu.png'; // Path to adu.png
-$pdf->Image($organizationLogo, $yellowLineLeftMargin, $yellowLineTopMargin + 10, $orgLogoSize);
+        // Now start adding content within the margins
 
-// Adamson University text centered between the logos
-$pdf->SetFont('Arial', 'B', 20);
-$pdf->SetXY($yellowLineLeftMargin, $yellowLineTopMargin + 15); // Adjust Y to align with logo height
-$pdf->Cell(297 - $yellowLineLeftMargin - $yellowLineRightMargin, 10, 'Adamson University', 0, 1, 'C');
+        // Organization logo on the left
+        $orgLogoSize = 30;
+        $aduLogoPath = "C:/xampp/htdocs/capstone/adu.png"; // Path to adu.png
+        $pdf->Image(
+            $organizationLogo,
+            $yellowLineLeftMargin,
+            $yellowLineTopMargin + 10,
+            $orgLogoSize
+        );
 
-// ADU logo on the right
-$pdf->Image($aduLogoPath, 297 - $yellowLineRightMargin - $orgLogoSize, $yellowLineTopMargin + 10, $orgLogoSize);
+        // Adamson University text centered between the logos
+        $pdf->SetFont("Arial", "B", 20);
+        $pdf->SetXY($yellowLineLeftMargin, $yellowLineTopMargin + 15); // Adjust Y to align with logo height
+        $pdf->Cell(
+            297 - $yellowLineLeftMargin - $yellowLineRightMargin,
+            10,
+            "Adamson University",
+            0,
+            1,
+            "C"
+        );
 
-$pdf->Ln(20); // Space below logos and university name
+        // ADU logo on the right
+        $pdf->Image(
+            $aduLogoPath,
+            297 - $yellowLineRightMargin - $orgLogoSize,
+            $yellowLineTopMargin + 10,
+            $orgLogoSize
+        );
 
-// Title section
-$pdf->SetFont('Arial', 'B', 24);
-$pdf->Cell(0, 10, 'Certificate of Participation', 0, 1, 'C');
-$pdf->SetTextColor(232, 175, 12);
-$pdf->SetFont('Arial', 'I', 16);
-$pdf->Cell(0, 10, "This certificate is awarded to", 0, 1, 'C');
+        $pdf->Ln(20); // Space below logos and university name
 
-// Participant's name
-$pdf->SetTextColor(25, 25, 112);
-$pdf->SetFont('Arial', 'B', 28);
-$pdf->Cell(0, 20, $userName, 0, 1, 'C'); // Display user's name
+        // Title section
+        $pdf->SetFont("Arial", "B", 24);
+        $pdf->Cell(0, 10, "Certificate of Participation", 0, 1, "C");
+        $pdf->SetTextColor(232, 175, 12);
+        $pdf->SetFont("Arial", "I", 16);
+        $pdf->Cell(0, 10, "This certificate is awarded to", 0, 1, "C");
 
-$pdf->SetTextColor(0, 0, 0);
-$pdf->SetFont('Arial', 'I', 16);
-$pdf->MultiCell(0, 10, "for attending and participating in $eventTitle conducted by $organizationName on $eventDate at $eventVenue.\nGiven on $eventDate.", 0, 'C');
+        // Participant's name
+        $pdf->SetTextColor(25, 25, 112);
+        $pdf->SetFont("Arial", "B", 28);
+        $pdf->Cell(0, 20, $userName, 0, 1, "C"); // Display user's name
 
-// Fetch President, Adviser, and Chairperson from event table
-$orgDetailsQuery = "SELECT president, adviser, chairperson FROM event WHERE eventID = ?";
-$orgDetailsStmt = $conn->prepare($orgDetailsQuery);
-$orgDetailsStmt->bind_param("i", $eventID);
-$orgDetailsStmt->execute();
-$orgDetailsStmt->bind_result($president, $adviser, $chairperson);
-$orgDetailsStmt->fetch();
-$orgDetailsStmt->close();
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont("Arial", "I", 16);
+        $pdf->MultiCell(
+            0,
+            10,
+            "for attending and participating in $eventTitle conducted by $organizationName on $eventDate at $eventVenue.\nGiven on $eventDate.",
+            0,
+            "C"
+        );
 
-$pdf->Ln(5); // Space before organization roles
+        // Fetch President, Adviser, and Chairperson from event table
+        $orgDetailsQuery =
+            "SELECT president, adviser, chairperson FROM event WHERE eventID = ?";
+        $orgDetailsStmt = $conn->prepare($orgDetailsQuery);
+        $orgDetailsStmt->bind_param("i", $eventID);
+        $orgDetailsStmt->execute();
+        $orgDetailsStmt->bind_result($president, $adviser, $chairperson);
+        $orgDetailsStmt->fetch();
+        $orgDetailsStmt->close();
 
-// Display President and Adviser
+        $pdf->Ln(5); // Space before organization roles
 
-$pdf->SetXY($yellowLineLeftMargin, $pdf->GetY() + 10); // Adjust Y position as needed
+        // Display President and Adviser
 
-if ($president || $adviser) {
-    // President and Adviser Names in a row
-    $pdf->SetFont('Arial', 'B', 12);
+        $pdf->SetXY($yellowLineLeftMargin, $pdf->GetY() + 10); // Adjust Y position as needed
 
-    $cellWidth = (297 - $yellowLineLeftMargin - $yellowLineRightMargin) / 3;
+        if ($president || $adviser) {
+            // President and Adviser Names in a row
+            $pdf->SetFont("Arial", "B", 12);
 
-        // President's Name
-        $pdf->Cell($cellWidth, 5, $president, 0, 0, 'C');
-        $pdf->Cell($cellWidth, 5, "", 0, 0); // Spacer cell
-        $pdf->Cell($cellWidth, 5, $adviser, 0, 1, 'C'); // Adviser's Name
-    
-        // Titles below President and Adviser
-        $pdf->SetFont('Arial', 'I', 10);
-        $pdf->Cell($cellWidth, 5, "Organization President", 0, 0, 'C'); // President's Title
-        $pdf->Cell($cellWidth, 5, "", 0, 0); // Spacer cell
-        $pdf->Cell($cellWidth, 5, "Organization Adviser", 0, 1, 'C'); // Adviser's Title
-    }
-    
-    $pdf->Ln(5); // Space below President and Adviser section
-    
-    // Display Chairperson within the yellow line margins if present
-    if ($chairperson) {
-        $pdf->SetFont('Arial', 'B', 12);
-    
-        // Center Chairperson Name within yellow line area
-        $pdf->Cell(0, 5, $chairperson, 0, 1, 'C');
-    
-        // Title for Chairperson
-        $pdf->SetFont('Arial', 'I', 10);
-        $pdf->Cell(0, 5, "College Chairperson", 0, 1, 'C');
-    }
+            $cellWidth =
+                (297 - $yellowLineLeftMargin - $yellowLineRightMargin) / 3;
 
+            // President's Name
+            $pdf->Cell($cellWidth, 5, $president, 0, 0, "C");
+            $pdf->Cell($cellWidth, 5, "", 0, 0); // Spacer cell
+            $pdf->Cell($cellWidth, 5, $adviser, 0, 1, "C"); // Adviser's Name
 
-// Save the certificate
-$certificateFilePath = 'certificates/' . $userName . '_certificate.pdf';
-$pdf->Output($certificateFilePath, 'F');
+            // Titles below President and Adviser
+            $pdf->SetFont("Arial", "I", 10);
+            $pdf->Cell($cellWidth, 5, "Organization President", 0, 0, "C"); // President's Title
+            $pdf->Cell($cellWidth, 5, "", 0, 0); // Spacer cell
+            $pdf->Cell($cellWidth, 5, "Organization Adviser", 0, 1, "C"); // Adviser's Title
+        }
+
+        $pdf->Ln(5); // Space below President and Adviser section
+
+        // Display Chairperson within the yellow line margins if present
+        if ($chairperson) {
+            $pdf->SetFont("Arial", "B", 12);
+
+            // Center Chairperson Name within yellow line area
+            $pdf->Cell(0, 5, $chairperson, 0, 1, "C");
+
+            // Title for Chairperson
+            $pdf->SetFont("Arial", "I", 10);
+            $pdf->Cell(0, 5, "College Chairperson", 0, 1, "C");
+        }
+
+        // Save the certificate
+        $certificateFilePath = "certificates/" . $userName . "_certificate.pdf";
+        $pdf->Output($certificateFilePath, "F");
         if ($recipientEmail && $eventTitle) {
             $mail = new PHPMailer(true);
             try {
                 $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com';
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'notifications.aduevent@gmail.com';
-                $mail->Password   = 'mylh wdkv ufqt lncq';
+                $mail->Host = "smtp.gmail.com";
+                $mail->SMTPAuth = true;
+                $mail->Username = "notifications.aduevent@gmail.com";
+                $mail->Password = "mylh wdkv ufqt lncq";
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 587;
+                $mail->Port = 587;
 
-                $mail->setFrom('notifications.aduevent@gmail.com', 'AdUEvent Notifications');
+                $mail->setFrom(
+                    "notifications.aduevent@gmail.com",
+                    "AdUEvent Notifications"
+                );
                 $mail->addAddress($recipientEmail);
 
                 $mail->isHTML(true);
-                $mail->Subject = 'Certificate of Participation for ' . $eventTitle;
-                $mail->Body    = "Hello $userName,<br><br>
+                $mail->Subject =
+                    "Certificate of Participation for " . $eventTitle;
+                $mail->Body = "Hello $userName,<br><br>
                                   Thank you for participating in the event <strong>$eventTitle</strong>.<br>
                                   Please find your attached certificate.<br><br>
                                   Best regards,<br>
@@ -272,8 +327,10 @@ $pdf->Output($certificateFilePath, 'F');
     <link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <?php include 'studentNavbar.php';
-    $activePage = "studentFeedback"; ?>
+    <?php
+    include "studentNavbar.php";
+    $activePage = "studentFeedback";
+    ?>
     <style>
         .survey-container {
             background-color: #ffffff;
@@ -327,11 +384,13 @@ $pdf->Output($certificateFilePath, 'F');
                 <form method="POST" action="">
                     <table class="table table-rating">
                         <tbody>
-                            <?php for ($i = 1; $i <= 10; $i++) { 
+                            <?php for ($i = 1; $i <= 10; $i++) {
                                 $questionKey = "question" . $i;
                                 if (!empty($feedback[$questionKey])) { ?>
                                     <tr>
-                                        <td class="question"><?php echo $feedback[$questionKey]; ?></td>
+                                        <td class="question"><?php echo $feedback[
+                                            $questionKey
+                                        ]; ?></td>
                                         <td class="rating-stars">
                                             <!-- Star Rating -->
                                             <div class="rating">
