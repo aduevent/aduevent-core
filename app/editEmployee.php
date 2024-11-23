@@ -172,6 +172,26 @@ $userTypeResult = $conn->query($userTypeQuery);
             border-radius: 5px; /* Consistent border radius */
         }
     </style>
+    <script>
+        function toggleOrganizationField() {
+            const userType = document.getElementById("userTypeID").value;
+            const orgField = document.getElementById("organizationID");
+
+            if (["5", "6", "8", "9", "10", "11", "12"].includes(userType)) {
+                orgField.disabled = true;
+                orgField.required = false;
+                orgField.value = "";
+            } else {
+                orgField.disabled = false;
+                orgField.required = true;
+            }
+        }
+
+        // call function as soon as the DOM has been loaded
+        document.addEventListener("DOMContentLoaded", function() {
+          toggleOrganizationField()
+        })
+    </script>
 </head>
 <body>
     <div class="form-container">
@@ -216,7 +236,7 @@ $userTypeResult = $conn->query($userTypeQuery);
             </div>
             <div class="form-group">
                 <label for="userTypeID">User Type</label>
-                <select name="userTypeID" id="userTypeID" class="form-control" required>
+                <select name="userTypeID" id="userTypeID" class="form-control" required onchange="toggleOrganizationField()">
                     <?php while (
                         $userTypeData = $userTypeResult->fetch_assoc()
                     ) { ?>
